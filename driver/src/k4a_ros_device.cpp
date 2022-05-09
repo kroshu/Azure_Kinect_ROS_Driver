@@ -31,7 +31,7 @@ using namespace image_transport;
 using namespace std;
 
 #if defined(K4A_BODY_TRACKING)
-using namespace visualization_msgs::msg;
+using namespace camera_msgs::msg;
 #endif
 
 K4AROSDevice::K4AROSDevice()
@@ -770,11 +770,12 @@ k4a_result_t K4AROSDevice::getImuFrame(const k4a_imu_sample_t& sample, std::shar
 }
 
 #if defined(K4A_BODY_TRACKING)
-k4a_result_t K4AROSDevice::getBodyMarker(const k4abt_body_t& body, std::shared_ptr<visualization_msgs::msg::Marker> marker_msg, int jointType,
+k4a_result_t K4AROSDevice::getBodyMarker(const k4abt_body_t& body, std::shared_ptr<camera_msgs::msg::Marker> marker_msg, int jointType,
                                          rclcpp::Time capture_time)
 {
   k4a_float3_t position = body.skeleton.joints[jointType].position;
   k4a_quaternion_t orientation = body.skeleton.joints[jointType].orientation;
+  k4abt_joint_confidence_level_t confidence_level = body.skeleton.joints[jointType].confidence_level;
 
   marker_msg->header.frame_id = calibration_data_.tf_prefix_ + calibration_data_.depth_camera_frame_;
   marker_msg->header.stamp = capture_time;
@@ -783,7 +784,6 @@ k4a_result_t K4AROSDevice::getBodyMarker(const k4abt_body_t& body, std::shared_p
   // New markers with the same ID will replace old markers as soon as they arrive.
   marker_msg->lifetime = rclcpp::Duration(0.25);
   marker_msg->id = body.id * 100 + jointType;
-  marker_msg->type = Marker::SPHERE;
 
   Color color = BODY_COLOR_PALETTE[body.id % BODY_COLOR_PALETTE.size()];
 
@@ -803,6 +803,8 @@ k4a_result_t K4AROSDevice::getBodyMarker(const k4abt_body_t& body, std::shared_p
   marker_msg->pose.orientation.x = orientation.wxyz.x;
   marker_msg->pose.orientation.y = orientation.wxyz.y;
   marker_msg->pose.orientation.z = orientation.wxyz.z;
+
+  marker_msg->joint_confidence = confidence_level;
 
   return K4A_RESULT_SUCCEEDED;
 }

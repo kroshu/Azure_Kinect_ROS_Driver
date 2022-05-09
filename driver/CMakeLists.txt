@@ -27,6 +27,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(camera_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -49,6 +50,7 @@ ament_target_dependencies(${PROJECT_NAME}_node rclcpp
   std_msgs 
   sensor_msgs
   visualization_msgs
+  camera_msgs
   image_transport
   tf2
   tf2_ros

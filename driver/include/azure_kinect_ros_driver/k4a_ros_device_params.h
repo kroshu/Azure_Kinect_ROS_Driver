@@ -45,7 +45,7 @@
   LIST_ENTRY(color_resolution,                                                                                         \
              "The resolution of the color camera. Options are: 720P, 1080P, 1440P, 1536P, 2160P, 3072P", std::string,  \
              std::string("720P"))                                                                                      \
-  LIST_ENTRY(fps, "The FPS of the RGB and Depth cameras. Options are: 5, 15, 30", int, 5)                              \
+  LIST_ENTRY(fps, "The FPS of the RGB and Depth cameras. Options are: 5, 15, 30", int, 30)                              \
   LIST_ENTRY(point_cloud,                                                                                              \
              "A PointCloud2 based on depth data. Requires depth_enabled=true, and cannot be used with "                \
              "depth_mode=PASSIVE_IR",                                                                                  \
@@ -60,7 +60,7 @@
   LIST_ENTRY(recording_file, "Path to a recording file to open instead of opening a device", std::string,              \
              std::string(""))                                                                                          \
   LIST_ENTRY(recording_loop_enabled, "True if the recording should be rewound at EOF", bool, false)                    \
-  LIST_ENTRY(body_tracking_enabled, "True if body joints should be published as a marker array message", bool, false)  \
+  LIST_ENTRY(body_tracking_enabled, "True if body joints should be published as a marker array message", bool, true)  \
   LIST_ENTRY(body_tracking_smoothing_factor,                                                                           \
              "Controls the temporal smoothing of joints across frames. Set between 0 for no smoothing and 1 for full " \
              "smoothing.",                                                                                             \

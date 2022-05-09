@@ -25,7 +25,8 @@
 #include <k4arecord/playback.hpp>
 
 #if defined(K4A_BODY_TRACKING)
-#include <visualization_msgs/msg/marker_array.hpp>
+#include <camera_msgs/msg/marker_array.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 #include <k4abt.hpp>
 #endif
 
@@ -67,7 +68,7 @@ class K4AROSDevice : public rclcpp::Node
   k4a_result_t getIrFrame(const k4a::capture& capture, std::shared_ptr<sensor_msgs::msg::Image>& ir_image);
 
 #if defined(K4A_BODY_TRACKING)
-  k4a_result_t getBodyMarker(const k4abt_body_t& body, std::shared_ptr<visualization_msgs::msg::Marker> marker_msg, int jointType,
+  k4a_result_t getBodyMarker(const k4abt_body_t& body, std::shared_ptr<camera_msgs::msg::Marker> marker_msg, int jointType,
                              rclcpp::Time capture_time);
 
   k4a_result_t getBodyIndexMap(const k4abt::frame& body_frame, std::shared_ptr<sensor_msgs::msg::Image> body_index_map_image);
@@ -136,7 +137,7 @@ class K4AROSDevice : public rclcpp::Node
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_publisher_;
 
 #if defined(K4A_BODY_TRACKING)
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr body_marker_publisher_;
+  rclcpp::Publisher<camera_msgs::msg::MarkerArray>::SharedPtr body_marker_publisher_; 
 
   image_transport::Publisher body_index_map_publisher_;
 #endif
