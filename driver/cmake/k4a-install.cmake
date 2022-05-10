@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-message("-- Custom K4A install -- ")
+message(VERBOSE "-- Custom K4A install -- ")
   # Tell cmake that we need to reconfigure if any of the DLL files change
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${K4A_DLL_FILES})
 
@@ -18,4 +18,4 @@ message("-- Custom K4A install -- ")
       set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${DIRECTORY}/${DLL_NAME}")
     endforeach(DIRECTORY)
   endforeach(DLL)
-message("-- Custom K4A install finished -- ")
+message(VERBOSE "-- Custom K4A install finished -- ")

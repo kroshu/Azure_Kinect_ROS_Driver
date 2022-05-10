@@ -8,6 +8,7 @@ set(RELATIVE_WIN_K4ABT_LIB_PATH "${RELATIVE_WIN_LIB_DIR}/k4abt.lib")
 set(RELATIVE_WIN_K4ABT_DLL_PATH "${RELATIVE_WIN_BIN_DIR}/k4abt.dll")
 set(RELATIVE_WIN_DNN_MODEL_PATH "${RELATIVE_WIN_BIN_DIR}/dnn_model_2_0_op11.onnx")
 set(RELATIVE_WIN_ONNX_RUNTIME_DLL_PATH "${RELATIVE_WIN_BIN_DIR}/onnxruntime.dll")
+set(RELATIVE_WIN_DIRECTML_DLL_PATH "${RELATIVE_WIN_BIN_DIR}/directml.dll")
 
 # K4A BT versions have exactly 3 components: major.minor.rev
 if (NOT (FIND_VERSION_COUNT EQUAL 3))
@@ -68,6 +69,12 @@ elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
             quiet_message(WARNING "Rejecting SDK located at ${_sdk_dir}: Could not find onnxruntime.onnx at ${_onnx_runtime_bin_path}")
             return()
         endif()
+        
+        set(_directml_bin_path "${_sdk_dir}/${RELATIVE_WIN_DIRECTML_DLL_PATH}")
+        if(NOT EXISTS "${_directml_bin_path}")
+            quiet_message(WARNING "Rejecting SDK located at ${_sdk_dir}: Could not find directml.dll at ${_directml_bin_path}")
+            return()
+        endif()
 
         if (FIND_EXACT)
             message(FATAL_ERROR "Cannot find EXACT versions of the Azure Kinect Body Tracking SDK on Windows as no version information is available.")
@@ -86,7 +93,7 @@ elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
         set_property(TARGET k4abt::k4abt PROPERTY IMPORTED_IMPLIB "${_k4abt_lib_path}")
         
         # Mark the depthengine as a requirement for running k4a.dll
-        set_property(TARGET k4abt::k4abt PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES "${_dnn_model_path};${_onnx_runtime_bin_path}")
+        set_property(TARGET k4abt::k4abt PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES "${_dnn_model_path};${_onnx_runtime_bin_path};${_directml_bin_path}")
                 
         set(${CMAKE_FIND_PACKAGE_NAME}_FOUND TRUE)
         set(${CMAKE_FIND_PACKAGE_NAME}_VERSION ${FIND_VERSION})

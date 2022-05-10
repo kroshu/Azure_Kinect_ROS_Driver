@@ -41,40 +41,19 @@ foreach(_lib ${K4A_LIBS})
     endif()
 endforeach()
 
-message("K4A Libs: ${K4A_LIBS}")
-message("K4A DLLs: ${K4A_DLL_FILES}")
-message("K4A Install Needed: ${K4A_INSTALL_NEEDED}")
-
-if (${K4A_INSTALL_NEEDED})
-  # Tell cmake that we need to reconfigure if any of the DLL files change
-  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${K4A_DLL_FILES})
-
-  # We need to copy the DLLs into the same folder as 
-  # the node executable so it can find them on launch
-  set(DLL_COPY_DIRECTORY "${PROJECT_SOURCE_DIR}/install/${PROJECT_NAME}/lib/${PROJECT_NAME}")
-
-  foreach(DIRECTORY ${DLL_COPY_DIRECTORY})
-    file(MAKE_DIRECTORY "${DIRECTORY}")
-  endforeach(DIRECTORY)
-
-  foreach(DLL ${K4A_DLL_FILES})
-    foreach(DIRECTORY ${DLL_COPY_DIRECTORY})
-      file(COPY "${DLL}" DESTINATION "${DIRECTORY}")
-      get_filename_component(DLL_NAME ${DLL} NAME)
-      message(STATUS "Copied dll from ${DLL_NAME} to ${DIRECTORY}")
-      # Tell cmake that we need to clean up these DLLs on a "make clean"
-      set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${DIRECTORY}/${DLL_NAME}")
-    endforeach(DIRECTORY)
-  endforeach(DLL)
-endif()
+message(VERBOSE "K4A Libs: ${K4A_LIBS}")
+message(VERBOSE "K4A DLLs: ${K4A_DLL_FILES}")
+message(VERBOSE "K4A Install Needed: ${K4A_INSTALL_NEEDED}")
 
 ## Run a custom install script for the K4A components
 ## Running the two "CODE" blocks populates the cmake_install.cmake script with the information
 ## about which DLLs to install, and where to install them.
 ## We then run the more complex script to actually perform the installation.
 if (${K4A_INSTALL_NEEDED})
-  message("Installing K4A SDK to binary output folder")
+  # Tell cmake that we need to reconfigure if any of the DLL files change
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${K4A_DLL_FILES})
+  message(VERBOSE "Installing K4A SDK to binary output folder")
   install(CODE "set(K4A_DLL_FILES \"${K4A_DLL_FILES}\")")
-  install(CODE "set(DLL_COPY_DIRECTORY \"${PROJECT_SOURCE_DIR}/install/${PROJECT_NAME}/lib/${PROJECT_NAME}\")")
+  install(CODE "set(DLL_COPY_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}\")")
   install(SCRIPT "./cmake/k4a-install.cmake")
 endif()

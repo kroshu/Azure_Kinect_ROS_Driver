@@ -67,7 +67,7 @@ set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX ""
 #### AZURE KINECT SDK ######
 ############################
 
-message("Finding K4A SDK binaries")
+message(VERBOSE "Finding K4A SDK binaries")
 
 # Disable cached locations for K4A SDK binaries.
 # Do this to force the search logic to happen correctly.
