@@ -57,6 +57,6 @@ jobs:
       shell: bash
       run: |
         source /opt/ros/foxy/setup.bash
-        colcon build --packages-select azure_kinect_ros_driver --event-handlers console_cohesion+
+        colcon build --packages-select camera_msgs azure_kinect_ros_driver --event-handlers console_cohesion+
       env:
         ROSDISTRO: ${{ matrix.ROSDISTRO }}
