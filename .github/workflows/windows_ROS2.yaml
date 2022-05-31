@@ -25,7 +25,7 @@ jobs:
       run: |
         choco sources add -n=roswin -s https://aka.ms/ros/public --priority 1
         choco install ros-%ROSDISTRO%-desktop -y --no-progress
-        choco install numpy
+        python3 - m pip install numpy
       env:
         ROSDISTRO: ${{ matrix.ROSDISTRO }}
     - name: Install Azure Kinect Sensor SDK
