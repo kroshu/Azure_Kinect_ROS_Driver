@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: [windows-2019]
+    runs-on: [windows-latest]
     strategy:
       fail-fast: false
       matrix:
@@ -25,13 +25,8 @@ jobs:
       run: |
         choco sources add -n=roswin -s https://aka.ms/ros/public --priority 1
         choco install ros-%ROSDISTRO%-desktop -y --no-progress
-        choco install numpy
       env:
         ROSDISTRO: ${{ matrix.ROSDISTRO }}
-    - name: Refresh environment
-      shell: powershell
-      run: |
-        refreshenv   
     - name: Install Azure Kinect Sensor SDK
       shell: powershell
       run: |
