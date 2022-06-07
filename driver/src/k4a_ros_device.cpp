@@ -876,7 +876,6 @@ void K4AROSDevice::framePublisherThread()
 
   Time capture_time;
 
-  k4a::capture capture;
 
   calibration_data_.getDepthCameraInfo(depth_raw_camera_info);
   calibration_data_.getRgbCameraInfo(rgb_raw_camera_info);
@@ -892,6 +891,7 @@ void K4AROSDevice::framePublisherThread()
   {
     if (k4a_device_)
     {
+      std::lock_guard<std::mutex> lk(m_);
       if (!k4a_device_.get_capture(&capture, waitTime))
       {
         RCLCPP_FATAL(this->get_logger(),"Failed to poll cameras: node cannot continue.");
@@ -1042,24 +1042,6 @@ void K4AROSDevice::framePublisherThread()
             depth_rect_camerainfo_publisher_->publish(depth_rect_camera_info);
           }
         }
-
-#if defined(K4A_BODY_TRACKING)
-        // Publish body markers when body tracking is enabled and a depth image is available
-        if (params_.body_tracking_enabled && k4abt_tracker_queue_size_ < 3 &&
-            (this->count_subscribers("body_tracking_data") > 0 || this->count_subscribers("body_index_map/image_raw") > 0))
-        {
-          if (!k4abt_tracker_.enqueue_capture(capture))
-          {
-            RCLCPP_ERROR(this->get_logger(),"Error! Add capture to tracker process queue failed!");
-            rclcpp::shutdown();
-            return;
-          }
-          else
-          {
-            ++k4abt_tracker_queue_size_;
-          }
-        }
-#endif
       }
     }
 
@@ -1256,8 +1238,20 @@ void K4AROSDevice::bodyPublisherThread()
         }
       }
     }
-    else
+    else if (capture.is_valid() && params_.body_tracking_enabled &&
+      (this->count_subscribers("body_tracking_data") > 0 || this->count_subscribers("body_index_map/image_raw") > 0))
     {
+		std::lock_guard<std::mutex> lk(m_);
+	    if (!k4abt_tracker_.enqueue_capture(capture))
+          {
+            RCLCPP_ERROR(this->get_logger(),"Error! Add capture to tracker process queue failed!");
+            rclcpp::shutdown();
+            return;
+          }
+          else
+          {
+            ++k4abt_tracker_queue_size_;
+          }
       std::this_thread::sleep_for(std::chrono::milliseconds{ 20 });
     }
   }
