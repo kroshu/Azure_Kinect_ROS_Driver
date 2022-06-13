@@ -159,7 +159,7 @@ class K4AROSDevice : public rclcpp::Node
   std::atomic_int16_t k4abt_tracker_queue_size_;
   std::thread body_publisher_thread_;
   
-  k4a::capture capture;
+  k4a::capture capture_;
   std::mutex m_;
 #endif
 

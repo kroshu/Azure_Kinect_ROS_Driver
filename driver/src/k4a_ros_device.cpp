@@ -892,7 +892,7 @@ void K4AROSDevice::framePublisherThread()
     if (k4a_device_)
     {
       std::lock_guard<std::mutex> lk(m_);
-      if (!k4a_device_.get_capture(&capture, waitTime))
+      if (!k4a_device_.get_capture(&capture_, waitTime))
       {
         RCLCPP_FATAL(this->get_logger(),"Failed to poll cameras: node cannot continue.");
         rclcpp::shutdown();
@@ -904,13 +904,13 @@ void K4AROSDevice::framePublisherThread()
         {
           // Update the timestamp offset based on the difference between the system timestamp (i.e., arrival at USB bus)
           // and device timestamp (i.e., hardware clock at exposure start).
-          updateTimestampOffset(capture.get_ir_image().get_device_timestamp(),
-                                capture.get_ir_image().get_system_timestamp());
+          updateTimestampOffset(capture_.get_ir_image().get_device_timestamp(),
+                                capture_.get_ir_image().get_system_timestamp());
         }
         else if (params_.color_enabled)
         {
-          updateTimestampOffset(capture.get_color_image().get_device_timestamp(),
-                                capture.get_color_image().get_system_timestamp());
+          updateTimestampOffset(capture_.get_color_image().get_device_timestamp(),
+                                capture_.get_color_image().get_system_timestamp());
         }
       }
       waitTime = regularFrameWaitTime;
@@ -918,13 +918,13 @@ void K4AROSDevice::framePublisherThread()
     else if (k4a_playback_handle_)
     {
       std::lock_guard<std::mutex> guard(k4a_playback_handle_mutex_);
-      if (!k4a_playback_handle_.get_next_capture(&capture))
+      if (!k4a_playback_handle_.get_next_capture(&capture_))
       {
         // rewind recording if looping is enabled
         if (params_.recording_loop_enabled)
         {
           k4a_playback_handle_.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
-          k4a_playback_handle_.get_next_capture(&capture);
+          k4a_playback_handle_.get_next_capture(&capture_);
           imu_stream_end_of_file_ = false;
           last_imu_time_usec_ = 0;
         }
@@ -936,7 +936,7 @@ void K4AROSDevice::framePublisherThread()
         }
       }
 
-      last_capture_time_usec_ = getCaptureTimestamp(capture).count();
+      last_capture_time_usec_ = getCaptureTimestamp(capture_).count();
     }
 
     CompressedImage::SharedPtr rgb_jpeg_frame(new CompressedImage);
@@ -954,10 +954,10 @@ void K4AROSDevice::framePublisherThread()
       // Recordings may not have synchronized captures. For unsynchronized captures without ir image skip ir frame.
 
       if ((this->count_subscribers("ir/image_raw") > 0 || this->count_subscribers("ir/camera_info") > 0) &&
-           (k4a_device_ || capture.get_ir_image() != nullptr))
+           (k4a_device_ || capture_.get_ir_image() != nullptr))
       {
         // IR images are available in all depth modes
-        result = getIrFrame(capture, ir_raw_frame);
+        result = getIrFrame(capture_, ir_raw_frame);
 
         if (result != K4A_RESULT_SUCCEEDED)
         {
@@ -967,7 +967,7 @@ void K4AROSDevice::framePublisherThread()
         }
         else if (result == K4A_RESULT_SUCCEEDED)
         {
-          capture_time = timestampToROS(capture.get_ir_image().get_device_timestamp());
+          capture_time = timestampToROS(capture_.get_ir_image().get_device_timestamp());
 
           // Re-sychronize the timestamps with the capture timestamp
           ir_raw_camera_info.header.stamp = capture_time;
@@ -987,9 +987,9 @@ void K4AROSDevice::framePublisherThread()
         // frame.
 
           if ((this->count_subscribers("depth/image_raw") > 0 || this->count_subscribers("depth/camera_info") > 0) &&
-             (k4a_device_ || capture.get_depth_image() != nullptr))
+             (k4a_device_ || capture_.get_depth_image() != nullptr))
         {
-          result = getDepthFrame(capture, depth_raw_frame);
+          result = getDepthFrame(capture_, depth_raw_frame);
 
           if (result != K4A_RESULT_SUCCEEDED)
           {
@@ -999,7 +999,7 @@ void K4AROSDevice::framePublisherThread()
           }
           else if (result == K4A_RESULT_SUCCEEDED)
           {
-            capture_time = timestampToROS(capture.get_depth_image().get_device_timestamp());
+            capture_time = timestampToROS(capture_.get_depth_image().get_device_timestamp());
 
             // Re-sychronize the timestamps with the capture timestamp
             depth_raw_camera_info.header.stamp = capture_time;
@@ -1019,9 +1019,9 @@ void K4AROSDevice::framePublisherThread()
           if (params_.color_enabled &&
              (this->count_subscribers("depth_to_rgb/image_raw") > 0 ||
               this->count_subscribers("depth_to_rgb/camera_info") > 0) &&
-             (k4a_device_ || capture.get_depth_image() != nullptr))
+             (k4a_device_ || capture_.get_depth_image() != nullptr))
         {
-          result = getDepthFrame(capture, depth_rect_frame, true /* rectified */);
+          result = getDepthFrame(capture_, depth_rect_frame, true /* rectified */);
 
           if (result != K4A_RESULT_SUCCEEDED)
           {
@@ -1031,7 +1031,7 @@ void K4AROSDevice::framePublisherThread()
           }
           else if (result == K4A_RESULT_SUCCEEDED)
           {
-            capture_time = timestampToROS(capture.get_depth_image().get_device_timestamp());
+            capture_time = timestampToROS(capture_.get_depth_image().get_device_timestamp());
 
             depth_rect_frame->header.stamp = capture_time;
             depth_rect_frame->header.frame_id = calibration_data_.tf_prefix_ + calibration_data_.rgb_camera_frame_;
@@ -1052,9 +1052,9 @@ void K4AROSDevice::framePublisherThread()
       if (params_.color_format == "jpeg")
       {
         if ((this->count_subscribers("rgb/image_raw/compressed") > 0 || this->count_subscribers("rgb/camera_info") > 0) &&
-            (k4a_device_ || capture.get_color_image() != nullptr))
+            (k4a_device_ || capture_.get_color_image() != nullptr))
         {
-          result = getJpegRgbFrame(capture, rgb_jpeg_frame);
+          result = getJpegRgbFrame(capture_, rgb_jpeg_frame);
 
           if (result != K4A_RESULT_SUCCEEDED)
           {
@@ -1063,7 +1063,7 @@ void K4AROSDevice::framePublisherThread()
             return;
           }
 
-          capture_time = timestampToROS(capture.get_color_image().get_device_timestamp());
+          capture_time = timestampToROS(capture_.get_color_image().get_device_timestamp());
 
           rgb_jpeg_frame->header.stamp = capture_time;
           rgb_jpeg_frame->header.frame_id = calibration_data_.tf_prefix_ + calibration_data_.rgb_camera_frame_;
@@ -1077,9 +1077,9 @@ void K4AROSDevice::framePublisherThread()
       else if (params_.color_format == "bgra")
       {
         if ((this->count_subscribers("rgb/image_raw") > 0 || this->count_subscribers("rgb/camera_info") > 0) &&
-            (k4a_device_ || capture.get_color_image() != nullptr))
+            (k4a_device_ || capture_.get_color_image() != nullptr))
         {
-          result = getRbgFrame(capture, rgb_raw_frame);
+          result = getRbgFrame(capture_, rgb_raw_frame);
 
           if (result != K4A_RESULT_SUCCEEDED)
           {
@@ -1088,7 +1088,7 @@ void K4AROSDevice::framePublisherThread()
             return;
           }
 
-          capture_time = timestampToROS(capture.get_color_image().get_device_timestamp());
+          capture_time = timestampToROS(capture_.get_color_image().get_device_timestamp());
 
           rgb_raw_frame->header.stamp = capture_time;
           rgb_raw_frame->header.frame_id = calibration_data_.tf_prefix_ + calibration_data_.rgb_camera_frame_;
@@ -1105,9 +1105,9 @@ void K4AROSDevice::framePublisherThread()
 
         if (params_.depth_enabled && (calibration_data_.k4a_calibration_.depth_mode != K4A_DEPTH_MODE_PASSIVE_IR) &&
             (this->count_subscribers("rgb_to_depth/image_raw") > 0 || this->count_subscribers("rgb_to_depth/camera_info") > 0) &&
-            (k4a_device_ || (capture.get_color_image() != nullptr && capture.get_depth_image() != nullptr)))
+            (k4a_device_ || (capture_.get_color_image() != nullptr && capture_.get_depth_image() != nullptr)))
         {
-          result = getRbgFrame(capture, rgb_rect_frame, true /* rectified */);
+          result = getRbgFrame(capture_, rgb_rect_frame, true /* rectified */);
 
           if (result != K4A_RESULT_SUCCEEDED)
           {
@@ -1116,7 +1116,7 @@ void K4AROSDevice::framePublisherThread()
             return;
           }
 
-          capture_time = timestampToROS(capture.get_color_image().get_device_timestamp());
+          capture_time = timestampToROS(capture_.get_color_image().get_device_timestamp());
 
           rgb_rect_frame->header.stamp = capture_time;
           rgb_rect_frame->header.frame_id = calibration_data_.tf_prefix_ + calibration_data_.depth_camera_frame_;
@@ -1133,17 +1133,17 @@ void K4AROSDevice::framePublisherThread()
     // Recordings may not have synchronized captures. In unsynchronized captures skip point cloud.
 
     if (this->count_subscribers("points2") > 0 &&
-      (k4a_device_ || (capture.get_color_image() != nullptr && capture.get_depth_image() != nullptr)))
+      (k4a_device_ || (capture_.get_color_image() != nullptr && capture_.get_depth_image() != nullptr)))
     {
       if (params_.rgb_point_cloud)
       {
         if (params_.point_cloud_in_depth_frame)
         {
-          result = getRgbPointCloudInDepthFrame(capture, point_cloud);
+          result = getRgbPointCloudInDepthFrame(capture_, point_cloud);
         }
         else
         {
-          result = getRgbPointCloudInRgbFrame(capture, point_cloud);
+          result = getRgbPointCloudInRgbFrame(capture_, point_cloud);
         }
 
         if (result != K4A_RESULT_SUCCEEDED)
@@ -1155,7 +1155,7 @@ void K4AROSDevice::framePublisherThread()
       }
       else if (params_.point_cloud)
       {
-        result = getPointCloud(capture, point_cloud);
+        result = getPointCloud(capture_, point_cloud);
 
         if (result != K4A_RESULT_SUCCEEDED)
         {
@@ -1238,11 +1238,11 @@ void K4AROSDevice::bodyPublisherThread()
         }
       }
     }
-    else if (capture.is_valid() && params_.body_tracking_enabled &&
+    else if (params_.body_tracking_enabled &&
       (this->count_subscribers("body_tracking_data") > 0 || this->count_subscribers("body_index_map/image_raw") > 0))
     {
 		std::lock_guard<std::mutex> lk(m_);
-	    if (!k4abt_tracker_.enqueue_capture(capture))
+	    if (!k4abt_tracker_.enqueue_capture(capture_))
           {
             RCLCPP_ERROR(this->get_logger(),"Error! Add capture to tracker process queue failed!");
             rclcpp::shutdown();
