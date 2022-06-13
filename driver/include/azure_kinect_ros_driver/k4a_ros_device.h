@@ -158,10 +158,10 @@ class K4AROSDevice : public rclcpp::Node
   k4abt::tracker k4abt_tracker_;
   std::atomic_int16_t k4abt_tracker_queue_size_;
   std::thread body_publisher_thread_;
-  
+#endif
+
   k4a::capture capture_;
   std::mutex m_;
-#endif
 
   std::chrono::nanoseconds device_to_realtime_offset_{0};
 
